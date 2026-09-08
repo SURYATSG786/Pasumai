@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Pasumai</string>
+    <string name="title_activity_main">Pasumai</string>
+    <string name="package_name">com.pasumai.smartsolar</string>
+    <string name="custom_url_scheme">com.pasumai.smartsolar</string>
+</resources>
