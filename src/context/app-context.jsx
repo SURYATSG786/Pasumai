@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { isSupabaseConfigured, testSupabaseConnection, recordIrrigationLog } from '../services/supabase'
+import { isSupabaseConfigured, testSupabaseConnection, recordIrrigationLog, fetchIrrigationLogs, subscribeToSensorUpdates } from '../services/supabase'
 
 const AppContext = createContext()
 
@@ -61,19 +61,46 @@ export function AppProvider({ children }) {
     ])
   }, [])
 
-  // Check Supabase connection on startup
+  // Check Supabase connection on startup and fetch live logs & telemetry
   useEffect(() => {
     if (isSupabaseConfigured) {
       testSupabaseConnection().then(res => {
         setState(prev => ({ ...prev, supabaseConnected: res.connected }))
         if (res.connected) {
           logActivity('⚡ Connected to Supabase Cloud Database!', 'success')
-        } else {
-          logActivity(`Supabase notice: ${res.message}`, 'warning')
+          
+          // Fetch past irrigation logs from Supabase
+          fetchIrrigationLogs().then(logs => {
+            if (logs && logs.length > 0) {
+              setActivityLogs(prev => [...logs, ...prev])
+            }
+          })
         }
       })
+
+      // Subscribe to live sensor inserts
+      const unsubscribe = subscribeToSensorUpdates((newReading) => {
+        if (newReading && newReading.zone_id) {
+          setZonesSensors(prev => ({
+            ...prev,
+            [newReading.zone_id]: {
+              temperature: Number(newReading.temperature ?? prev[newReading.zone_id]?.temperature),
+              humidity: Number(newReading.humidity ?? prev[newReading.zone_id]?.humidity),
+              soilMoisture: Number(newReading.soil_moisture ?? prev[newReading.zone_id]?.soilMoisture),
+              tankLevel: Number(newReading.tank_level ?? prev[newReading.zone_id]?.tankLevel),
+              solarOutput: Number(newReading.solar_output ?? prev[newReading.zone_id]?.solarOutput),
+              batteryPct: Number(newReading.battery_pct ?? prev[newReading.zone_id]?.batteryPct),
+            },
+          }))
+        }
+      })
+
+      return () => {
+        if (unsubscribe) unsubscribe()
+      }
     }
   }, [logActivity])
+
 
 
   const setActiveZone = useCallback((zoneId) => {

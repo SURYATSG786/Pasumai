@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { ZONES as FALLBACK_ZONES } from '../data/mock-data'
 
 const DEFAULT_URL = 'https://irxsothgamllsoeqllef.supabase.co'
 const DEFAULT_KEY = 'sb_publishable_pVKAyyXXMelzZJKl2gvGcg_16JMKxH6'
@@ -11,7 +12,6 @@ export const isSupabaseConfigured = Boolean(
   supabaseAnonKey && 
   !supabaseUrl.includes('your-project-ref')
 )
-
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
@@ -34,9 +34,8 @@ export async function testSupabaseConnection() {
   }
 
   try {
-    const { data, error } = await supabase.from('zones').select('count', { count: 'exact', head: true })
+    const { error } = await supabase.from('zones').select('id', { head: true, count: 'exact' })
     if (error && error.code !== 'PGRST116') {
-      // If table doesn't exist yet, connection itself succeeded
       if (error.message && error.message.includes('relation "zones" does not exist')) {
         return {
           connected: true,
@@ -49,6 +48,50 @@ export async function testSupabaseConnection() {
     return { connected: true, tableReady: true, message: 'Connected to Supabase live database!' }
   } catch (err) {
     return { connected: false, message: err.message || 'Connection failed' }
+  }
+}
+
+/**
+ * Fetch Farm Zones from Supabase with graceful fallback
+ */
+export async function fetchZonesFromSupabase() {
+  if (!isSupabaseConfigured || !supabase) return FALLBACK_ZONES
+
+  try {
+    const { data, error } = await supabase
+      .from('zones')
+      .select('*')
+      .order('id', { ascending: true })
+
+    if (error || !data || data.length === 0) {
+      return FALLBACK_ZONES
+    }
+    return data
+  } catch (err) {
+    console.warn('Using fallback zones due to query error:', err)
+    return FALLBACK_ZONES
+  }
+}
+
+/**
+ * Fetch latest sensor telemetry for a zone
+ */
+export async function fetchLatestTelemetry(zoneId) {
+  if (!isSupabaseConfigured || !supabase) return null
+
+  try {
+    const { data, error } = await supabase
+      .from('sensor_telemetry')
+      .select('*')
+      .eq('zone_id', zoneId)
+      .order('recorded_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (error || !data) return null
+    return data
+  } catch (err) {
+    return null
   }
 }
 
@@ -74,6 +117,31 @@ export async function recordIrrigationLog({ zoneId, zoneName, durationMin, water
   } catch (err) {
     console.warn('Failed to insert log to Supabase:', err)
     return null
+  }
+}
+
+/**
+ * Fetch past irrigation activity logs from Supabase
+ */
+export async function fetchIrrigationLogs(limit = 20) {
+  if (!isSupabaseConfigured || !supabase) return []
+
+  try {
+    const { data, error } = await supabase
+      .from('irrigation_logs')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(limit)
+
+    if (error || !data) return []
+    return data.map(item => ({
+      id: item.id,
+      time: new Date(item.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      text: `${item.mode === 'ai' ? '🤖 AI Scheduled' : '💧 Manual'} irrigation completed for ${item.zone_name || item.zone_id} (${item.duration_minutes} mins · ${item.water_liters} L).`,
+      type: 'success',
+    }))
+  } catch (err) {
+    return []
   }
 }
 
