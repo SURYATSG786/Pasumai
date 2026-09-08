@@ -14,7 +14,6 @@ const ZONE_IMAGES = {
 export function MobileHome({ onNavigate }) {
   const { 
     state, 
-    setActiveZone, 
     isIrrigating, 
     toggleIrrigation, 
     isFillingTank, 
@@ -27,31 +26,7 @@ export function MobileHome({ onNavigate }) {
 
   return (
     <div className="space-y-4 px-3 py-3 animate-fade-up">
-      {/* 1. Zone Quick-Switcher Chips (Thumb-accessible) */}
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1 -mx-3 px-3">
-        {ZONES.map((z) => {
-          const isActive = z.id === zone.id
-          return (
-            <button
-              key={z.id}
-              onClick={() => setActiveZone(z.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all duration-150 active:scale-95 cursor-pointer shadow-xs ${
-                isActive
-                  ? 'btn-primary !py-2 !px-3.5 shadow-md ring-2 ring-emerald-500/40'
-                  : 'bg-white/80 text-earth-900 border border-emerald-200 hover:bg-white'
-              }`}
-            >
-              <span className="text-base">{z.emoji}</span>
-              <span>{z.name}</span>
-              {z.health === 'warning' && (
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* 2. Hero 1-Tap Mobile Pump Control Widget */}
+      {/* 1. Hero 1-Tap Mobile Pump Control Widget */}
       <div className={`p-4 rounded-3xl border-2 transition-all duration-300 shadow-md ${
         isCurrentlyIrrigating 
           ? 'bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-500 ring-4 ring-emerald-400/30' 
