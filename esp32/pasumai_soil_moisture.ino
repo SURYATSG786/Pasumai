@@ -11,7 +11,7 @@
     - Sensor GND  --> ESP32 GND
     - Sensor AOUT --> ESP32 GPIO 34 (ADC1 Channel 6)
   
-  Cloud Target:
+  Target:
     - Supabase REST API (POST to sensor_telemetry table)
   =============================================================================
 */
@@ -22,27 +22,26 @@
 #include <ArduinoJson.h>
 
 // ============================================================================
-// 1. NETWORK & CREDENTIALS CONFIGURATION
+// 1. PRE-CONFIGURED NETWORK CREDENTIALS
 // ============================================================================
-// ⚠️ Replace with your WiFi SSID and Password
-const char* WIFI_SSID     = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID     = "Surya";
+const char* WIFI_PASSWORD = "Suri7860$$$";
 
-// Supabase Project Credentials
+// Supabase REST Endpoint & Publishable Key
 const char* SUPABASE_URL  = "https://irxsothgamllsoeqllef.supabase.co/rest/v1/sensor_telemetry";
 const char* SUPABASE_KEY  = "sb_publishable_pVKAyyXXMelzZJKl2gvGcg_16JMKxH6";
 
 // ============================================================================
-// 2. SENSOR PIN & CALIBRATION CONSTANTS
+// 2. HARDWARE & CALIBRATION CONSTANTS
 // ============================================================================
-#define SOIL_PIN        34   // Analog Input Pin connected to sensor AOUT
-#define STATUS_LED      2    // Built-in LED on ESP32 (flashes on transmission)
+#define SOIL_PIN        34   // Sensor AOUT connected to GPIO 34
+#define STATUS_LED      2    // ESP32 built-in status LED
 
-// Calibration Values:
-// 1. Dry Value: Read ADC when sensor is completely in DRY AIR (~2800 - 3500)
-// 2. Wet Value: Read ADC when sensor is submerged in a cup of WATER (~1200 - 1600)
-const int DRY_VALUE     = 2800;  // 0% Moisture (Air reading)
-const int WET_VALUE     = 1300;  // 100% Moisture (Water reading)
+// Calibrated Values:
+// - Air / Dry Value: ~2600 (0% Moisture)
+// - Submerged in Water: ~900 (100% Moisture)
+const int DRY_VALUE     = 2600;  // 0% Moisture (Air reading)
+const int WET_VALUE     = 900;   // 100% Moisture (Water reading)
 
 // Telemetry interval (30 seconds)
 const unsigned long SEND_INTERVAL_MS = 30000;
@@ -85,7 +84,7 @@ void connectToWiFi() {
 
 /**
  * Read smoothed Analog value from Soil Moisture Sensor
- * Takes 10 samples and averages them to filter out noise
+ * Takes 10 samples and averages them to filter out analog noise
  */
 int readSmoothADC(int pin) {
   long sum = 0;
@@ -102,7 +101,6 @@ int readSmoothADC(int pin) {
  * Capacitive sensors output higher voltage/ADC when dry and lower when wet.
  */
 int calculateMoisturePercent(int rawAdc) {
-  // Map capacitive voltage: High ADC = Dry (0%), Low ADC = Wet (100%)
   int percent = map(rawAdc, DRY_VALUE, WET_VALUE, 0, 100);
   return constrain(percent, 0, 100);
 }
@@ -117,11 +115,11 @@ bool sendTelemetryToSupabase(int rawValue, int percentValue) {
     return false;
   }
 
-  // Flash LED during network transmission
+  // Flash status LED during transmission
   digitalWrite(STATUS_LED, HIGH);
 
   WiFiClientSecure client;
-  client.setInsecure(); // Skip TLS certificate verification for simplicity
+  client.setInsecure(); // Direct TLS connection without cert verification
 
   HTTPClient http;
   http.begin(client, SUPABASE_URL);
@@ -148,11 +146,11 @@ bool sendTelemetryToSupabase(int rawValue, int percentValue) {
 
   bool success = false;
   if (httpResponseCode >= 200 && httpResponseCode < 300) {
-    Serial.print("[HTTP] Success! Supabase Response Code: ");
+    Serial.print("[HTTP] Success! Supabase Status: ");
     Serial.println(httpResponseCode);
     success = true;
   } else {
-    Serial.print("[HTTP] Failed! Error Code: ");
+    Serial.print("[HTTP] Failed! Supabase Status: ");
     Serial.println(httpResponseCode);
     String response = http.getString();
     if (response.length() > 0) {
@@ -194,7 +192,7 @@ void setup() {
 void loop() {
   unsigned long currentMillis = millis();
 
-  // Check if it's time to read sensor and send telemetry (every 30 seconds)
+  // Read and send telemetry every 30 seconds
   if (currentMillis - lastSendTime >= SEND_INTERVAL_MS || lastSendTime == 0) {
     lastSendTime = currentMillis;
 
@@ -218,6 +216,6 @@ void loop() {
     Serial.println("--------------------------------------------------");
   }
 
-  // Small yield
+  // Small delay for watchdog
   delay(100);
 }
