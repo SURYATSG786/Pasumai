@@ -4,18 +4,25 @@ import { ZONES } from '../data/mock-data'
 import { INITIAL_SOIL_LOGS, computeSoilStats } from '../data/soil-moisture-history'
 
 export function SoilMoistureLogsCard() {
-  const { activeZoneId, isSensorPowered } = useApp()
+  const { activeZoneId, isSensorPowered, liveSoilData } = useApp()
   const sensors = useLiveSensors(activeZoneId)
   const isPowered = isSensorPowered(activeZoneId)
   const zone = ZONES.find((z) => z.id === activeZoneId)
 
-  // Local logs state per zone
+  // Local logs state per zone with fallback
   const [logsState, setLogsState] = useState(INITIAL_SOIL_LOGS)
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'optimal' | 'adequate' | 'caution' | 'irrigated'
   const [searchQuery, setSearchQuery] = useState('')
   const [justLogged, setJustLogged] = useState(false)
 
-  const currentZoneLogs = logsState[activeZoneId] || []
+  // Priority to real Supabase sensor_telemetry logs if available
+  const currentZoneLogs = useMemo(() => {
+    if (liveSoilData?.logs && liveSoilData.logs.length > 0) {
+      return liveSoilData.logs
+    }
+    return logsState[activeZoneId] || []
+  }, [liveSoilData?.logs, logsState, activeZoneId])
+
 
   // Add a new reading manually from live sensor
   const handleRecordReading = () => {
@@ -324,12 +331,12 @@ export function SoilMoistureLogsCard() {
           {/* Table Header with Sticky Alignment */}
           <thead className="bg-white/95 sticky top-0 z-10 border-b border-sky-200/60 text-earth-900 font-black uppercase tracking-wider text-[10px]">
             <tr>
-              <th className="py-3 px-3.5 text-left w-28">Timestamp</th>
-              <th className="py-3 px-3.5 text-left w-44">Soil Moisture</th>
+              <th className="py-3 px-3.5 text-left w-32">Timestamp</th>
+              <th className="py-3 px-3.5 text-left w-44">Moisture %</th>
+              <th className="py-3 px-3.5 text-center w-28">Raw Value (ADC)</th>
               <th className="py-3 px-3.5 text-center w-28">Status</th>
-              <th className="py-3 px-3.5 text-center w-28">1h Delta</th>
-              <th className="py-3 px-3.5 text-center w-32">Temp / Humidity</th>
-              <th className="py-3 px-3.5 text-left">Telemetry & Operational Note</th>
+              <th className="py-3 px-3.5 text-center w-24">1h Delta</th>
+              <th className="py-3 px-3.5 text-left">Telemetry & Source Note</th>
             </tr>
           </thead>
 
@@ -376,6 +383,13 @@ export function SoilMoistureLogsCard() {
                       </div>
                     </td>
 
+                    {/* Raw Value (ESP32 ADC) */}
+                    <td className="py-3 px-3.5 text-center whitespace-nowrap">
+                      <span className="font-mono font-bold text-xs text-emerald-900 bg-emerald-50/90 px-2.5 py-1 rounded-md border border-emerald-200 shadow-2xs">
+                        {log.moistureRaw ? `${log.moistureRaw} raw` : '1700 raw'}
+                      </span>
+                    </td>
+
                     {/* Status Badge */}
                     <td className="py-3 px-3.5 text-center whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
@@ -402,7 +416,7 @@ export function SoilMoistureLogsCard() {
                           ? 'Optimal'
                           : log.status === 'adequate'
                           ? 'Adequate'
-                          : 'Low / Caution'}
+                          : 'Low / Dry'}
                       </span>
                     </td>
 
@@ -415,22 +429,16 @@ export function SoilMoistureLogsCard() {
                       </span>
                     </td>
 
-                    {/* Temp & Humidity */}
-                    <td className="py-3 px-3.5 text-center whitespace-nowrap text-earth-700 font-mono font-bold text-xs">
-                      <span>{log.temp.toFixed(1)}°C</span>
-                      <span className="text-sky-300 mx-1">·</span>
-                      <span>{log.hum}%</span>
-                    </td>
-
                     {/* Telemetry Note */}
                     <td className="py-3 px-3.5 text-left text-earth-800 text-xs font-bold">
-                      <span className="line-clamp-1">{log.note}</span>
+                      <span className="line-clamp-1">{log.note || 'ESP32 Live Feed'}</span>
                     </td>
                   </tr>
                 )
               })
             )}
           </tbody>
+
         </table>
       </div>
 

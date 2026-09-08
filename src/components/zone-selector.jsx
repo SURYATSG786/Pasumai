@@ -1,4 +1,4 @@
-import { useApp } from '../context/app-context'
+import { useApp, useLiveSensors } from '../context/app-context'
 import { ZONES } from '../data/mock-data'
 import { HEALTH_COLORS } from '../utils/colors'
 
@@ -11,6 +11,7 @@ const ZONE_IMAGES = {
 }
 
 function FarmPlotMap({ activeId, onSelectZone }) {
+
   return (
     <div className="relative w-full rounded-3xl bg-emerald-50/60 p-4 sm:p-6 border-2 border-emerald-200/80 shadow-inner overflow-hidden">
       {/* Background farm grid line accents */}
@@ -196,6 +197,7 @@ export function ZoneSelector() {
   const { state, setActiveZone } = useApp()
   const activeId = state.activeZoneId
   const activeZone = ZONES.find(z => z.id === activeId)
+  const liveSensors = useLiveSensors(activeId)
 
   return (
     <div className="glass-card p-5 sm:p-6 animate-fade-up">
@@ -280,20 +282,23 @@ export function ZoneSelector() {
             
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
               <div className="p-3 rounded-2xl bg-white/80 border border-emerald-200 shadow-xs">
-                <span className="text-earth-500 font-black block text-[10px] uppercase tracking-wider">Soil Moisture</span>
-                <div className="font-black text-earth-950 text-base mt-0.5">{activeZone.soilMoisture}%</div>
+                <div className="flex items-center justify-between">
+                  <span className="text-earth-500 font-black block text-[10px] uppercase tracking-wider">Soil Moisture</span>
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded">LIVE</span>
+                </div>
+                <div className="font-black text-earth-950 text-base mt-0.5">{liveSensors.soilMoisture}%</div>
               </div>
               <div className="p-3 rounded-2xl bg-white/80 border border-emerald-200 shadow-xs">
                 <span className="text-earth-500 font-black block text-[10px] uppercase tracking-wider">Temperature</span>
-                <div className="font-black text-earth-950 text-base mt-0.5">{activeZone.temperature}°C</div>
+                <div className="font-black text-earth-950 text-base mt-0.5">{liveSensors.temperature}°C</div>
               </div>
               <div className="p-3 rounded-2xl bg-white/80 border border-emerald-200 shadow-xs">
                 <span className="text-earth-500 font-black block text-[10px] uppercase tracking-wider">Tank Reserve</span>
-                <div className={`font-black text-base mt-0.5 ${activeZone.tankLevel < 40 ? 'text-amber-700' : 'text-earth-950'}`}>{activeZone.tankLevel}%</div>
+                <div className={`font-black text-base mt-0.5 ${liveSensors.tankLevel < 40 ? 'text-amber-700' : 'text-earth-950'}`}>{liveSensors.tankLevel}%</div>
               </div>
               <div className="p-3 rounded-2xl bg-white/80 border border-emerald-200 shadow-xs">
                 <span className="text-earth-500 font-black block text-[10px] uppercase tracking-wider">Solar Power</span>
-                <div className="font-black text-earth-950 text-base mt-0.5">{activeZone.solarOutput} kW</div>
+                <div className="font-black text-earth-950 text-base mt-0.5">{liveSensors.solarOutput} kW</div>
               </div>
               <div className="p-3 rounded-2xl bg-white/80 border border-emerald-200 shadow-xs">
                 <span className="text-earth-500 font-black block text-[10px] uppercase tracking-wider">Next Cycle</span>
@@ -313,3 +318,4 @@ export function ZoneSelector() {
     </div>
   )
 }
+

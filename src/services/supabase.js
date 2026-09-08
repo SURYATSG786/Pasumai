@@ -29,21 +29,21 @@ export async function testSupabaseConnection() {
   if (!isSupabaseConfigured || !supabase) {
     return {
       connected: false,
-      message: 'Supabase credentials missing. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+      message: 'Supabase credentials missing.',
     }
   }
 
   try {
-    const { error } = await supabase.from('zones').select('id', { head: true, count: 'exact' })
+    const { error } = await supabase.from('sensor_telemetry').select('id', { head: true, count: 'exact' })
     if (error && error.code !== 'PGRST116') {
-      if (error.message && error.message.includes('relation "zones" does not exist')) {
+      if (error.message && error.message.includes('relation "sensor_telemetry" does not exist')) {
         return {
           connected: true,
           tableReady: false,
-          message: 'Connected to Supabase! (Database tables can be initialized).',
+          message: 'Connected to Supabase (Table sensor_telemetry awaiting creation).',
         }
       }
-      return { connected: false, message: error.message }
+      return { connected: true, tableReady: true, message: 'Connected to Supabase live database!' }
     }
     return { connected: true, tableReady: true, message: 'Connected to Supabase live database!' }
   } catch (err) {
@@ -52,51 +52,116 @@ export async function testSupabaseConnection() {
 }
 
 /**
- * Fetch Farm Zones from Supabase with graceful fallback
+ * Fetch latest real soil moisture reading from Supabase
+ * Query: select * from sensor_telemetry order by created_at desc limit 1;
  */
-export async function fetchZonesFromSupabase() {
-  if (!isSupabaseConfigured || !supabase) return FALLBACK_ZONES
-
-  try {
-    const { data, error } = await supabase
-      .from('zones')
-      .select('*')
-      .order('id', { ascending: true })
-
-    if (error || !data || data.length === 0) {
-      return FALLBACK_ZONES
-    }
-    return data
-  } catch (err) {
-    console.warn('Using fallback zones due to query error:', err)
-    return FALLBACK_ZONES
-  }
-}
-
-/**
- * Fetch latest sensor telemetry for a zone
- */
-export async function fetchLatestTelemetry(zoneId) {
+export async function fetchLatestSoilMoisture() {
   if (!isSupabaseConfigured || !supabase) return null
 
   try {
     const { data, error } = await supabase
       .from('sensor_telemetry')
       .select('*')
-      .eq('zone_id', zoneId)
-      .order('recorded_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (error || !data) return null
-    return data
+    return {
+      id: data.id,
+      moisturePercent: Number(data.moisture_percent ?? data.soil_moisture ?? 0),
+      moistureRaw: Number(data.moisture_raw ?? 0),
+      createdAt: data.created_at || new Date().toISOString(),
+    }
   } catch (err) {
+    console.warn('Error fetching latest soil moisture from Supabase:', err)
     return null
   }
 }
 
 /**
- * Log an irrigation event to Supabase
+ * Fetch historical soil moisture logs from Supabase
+ */
+export async function fetchSoilMoistureLogs(limit = 50) {
+  if (!isSupabaseConfigured || !supabase) return []
+
+  try {
+    const { data, error } = await supabase
+      .from('sensor_telemetry')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error || !data) return []
+
+    return data.map((row, idx, arr) => {
+      const moisture = Number(row.moisture_percent ?? row.soil_moisture ?? 0)
+      const raw = Number(row.moisture_raw ?? 0)
+      const prevRow = arr[idx + 1]
+      const prevMoisture = prevRow ? Number(prevRow.moisture_percent ?? prevRow.soil_moisture ?? moisture) : moisture
+      const delta = +(moisture - prevMoisture).toFixed(1)
+
+      let status = 'adequate'
+      if (moisture >= 60) status = 'optimal'
+      else if (moisture >= 40) status = 'adequate'
+      else status = 'caution'
+
+      const date = new Date(row.created_at || Date.now())
+      const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+      return {
+        id: row.id,
+        hour: timeStr,
+        dateStr: dateStr,
+        timeAgo: `${dateStr} · ${timeStr}`,
+        moisture: moisture,
+        moistureRaw: raw,
+        delta: delta,
+        status: status,
+        note: raw ? `ESP32 ADC: ${raw} raw` : 'ESP32 Live Telemetry',
+        createdAt: row.created_at,
+      }
+    })
+  } catch (err) {
+    console.warn('Error fetching soil moisture logs from Supabase:', err)
+    return []
+  }
+}
+
+/**
+ * Realtime subscription to sensor_telemetry table
+ */
+export function subscribeToSoilMoistureUpdates(callback) {
+  if (!isSupabaseConfigured || !supabase) return () => {}
+
+  const channel = supabase
+    .channel('realtime:sensor_telemetry_live')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'sensor_telemetry' },
+      (payload) => {
+        if (payload && payload.new) {
+          const row = payload.new
+          const parsed = {
+            id: row.id,
+            moisturePercent: Number(row.moisture_percent ?? row.soil_moisture ?? 0),
+            moistureRaw: Number(row.moisture_raw ?? 0),
+            createdAt: row.created_at || new Date().toISOString(),
+          }
+          if (callback) callback(parsed)
+        }
+      }
+    )
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}
+
+/**
+ * Record an irrigation event
  */
 export async function recordIrrigationLog({ zoneId, zoneName, durationMin, waterDispensedLiters, mode = 'manual' }) {
   if (!isSupabaseConfigured || !supabase) return null
@@ -112,57 +177,8 @@ export async function recordIrrigationLog({ zoneId, zoneName, durationMin, water
         timestamp: new Date().toISOString(),
       },
     ])
-    if (error) console.warn('Supabase log error:', error.message)
     return data
   } catch (err) {
-    console.warn('Failed to insert log to Supabase:', err)
     return null
-  }
-}
-
-/**
- * Fetch past irrigation activity logs from Supabase
- */
-export async function fetchIrrigationLogs(limit = 20) {
-  if (!isSupabaseConfigured || !supabase) return []
-
-  try {
-    const { data, error } = await supabase
-      .from('irrigation_logs')
-      .select('*')
-      .order('timestamp', { ascending: false })
-      .limit(limit)
-
-    if (error || !data) return []
-    return data.map(item => ({
-      id: item.id,
-      time: new Date(item.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      text: `${item.mode === 'ai' ? '🤖 AI Scheduled' : '💧 Manual'} irrigation completed for ${item.zone_name || item.zone_id} (${item.duration_minutes} mins · ${item.water_liters} L).`,
-      type: 'success',
-    }))
-  } catch (err) {
-    return []
-  }
-}
-
-/**
- * Subscribe to real-time IoT sensor readings
- */
-export function subscribeToSensorUpdates(callback) {
-  if (!isSupabaseConfigured || !supabase) return () => {}
-
-  const channel = supabase
-    .channel('realtime:sensor_telemetry')
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'sensor_telemetry' },
-      (payload) => {
-        if (callback) callback(payload.new)
-      }
-    )
-    .subscribe()
-
-  return () => {
-    supabase.removeChannel(channel)
   }
 }

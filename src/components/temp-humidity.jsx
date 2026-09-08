@@ -103,9 +103,48 @@ export function TempHumidityCard() {
           </div>
         )}
 
-        {/* Sensor Gauges Grid */}
-        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 transition-opacity duration-300 ${!isPowered ? 'opacity-70' : 'opacity-100'}`}>
-          {/* Temperature */}
+        {/* Sensor Gauges Grid (3 Columns: Soil Moisture, Temperature, Humidity) */}
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 transition-opacity duration-300 ${!isPowered ? 'opacity-70' : 'opacity-100'}`}>
+          {/* 1. Live Soil Moisture from Supabase */}
+          <div className="glass p-5 rounded-2xl border-2 border-emerald-300/90 shadow-sm flex flex-col items-center justify-center bg-gradient-to-b from-emerald-50/50 to-transparent">
+            <div className="flex items-center justify-between w-full mb-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-earth-900">Soil Moisture (Live)</span>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full border bg-emerald-100 text-emerald-900 border-emerald-400 shadow-2xs">
+                SUPABASE LIVE
+              </span>
+            </div>
+
+            <div className="my-2 flex flex-col items-center">
+              <GaugeRing
+                value={Math.round(sensors.soilMoisture)}
+                max={100}
+                size={88}
+                unit="%"
+                color={sensors.soilMoisture >= 60 ? '#10b981' : sensors.soilMoisture >= 40 ? '#f59e0b' : '#ef4444'}
+                bgColor="rgba(203, 213, 225, 0.4)"
+              />
+              {sensors.soilMoistureRaw ? (
+                <span className="mt-1 text-[11px] font-mono font-bold text-emerald-800 bg-white/80 px-2 py-0.5 rounded border border-emerald-200">
+                  ESP32 ADC: {sensors.soilMoistureRaw}
+                </span>
+              ) : null}
+            </div>
+
+            {/* Mini range bar */}
+            <div className="progress-track w-full mt-3 h-2.5 bg-slate-200/80">
+              <div
+                className="progress-fill h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(0, sensors.soilMoisture))}%` }}
+              />
+            </div>
+            <div className="w-full flex justify-between text-[10px] text-slate-500 font-bold mt-1.5 px-1">
+              <span>0% Dry</span>
+              <span className="text-emerald-800 font-black">Target: 40% – 70%</span>
+              <span>100% Wet</span>
+            </div>
+          </div>
+
+          {/* 2. Temperature */}
           <div className="glass p-5 rounded-2xl border-2 border-amber-200/80 shadow-sm flex flex-col items-center justify-center">
             <div className="flex items-center justify-between w-full mb-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">Field Temperature</span>
@@ -141,7 +180,7 @@ export function TempHumidityCard() {
             </div>
           </div>
 
-          {/* Humidity */}
+          {/* 3. Humidity */}
           <div className="glass p-5 rounded-2xl border-2 border-sky-200/80 shadow-sm flex flex-col items-center justify-center">
             <div className="flex items-center justify-between w-full mb-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">Ambient Humidity</span>
@@ -177,6 +216,7 @@ export function TempHumidityCard() {
             </div>
           </div>
         </div>
+
 
         {/* Summary status note */}
         <div className={`mt-4 flex items-center gap-3 text-xs p-3.5 rounded-2xl border-2 ${

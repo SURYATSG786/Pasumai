@@ -18,20 +18,25 @@ export function HeroStats() {
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse-dot" />
               Soil Moisture
             </div>
-            <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-300/60">
-              Live
+            <span className="text-[10px] font-black text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-300 shadow-2xs">
+              LIVE
             </span>
           </div>
-          <div className="flex items-baseline gap-1.5 my-1">
+          <div className="flex items-baseline gap-2 my-1">
             <span className="text-3xl font-black tracking-tight text-earth-950 font-sans">
               <AnimatedNumber value={sensors.soilMoisture} suffix="%" />
             </span>
+            {sensors.soilMoistureRaw ? (
+              <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                ADC: {sensors.soilMoistureRaw}
+              </span>
+            ) : null}
           </div>
           <div className="text-xs font-bold text-earth-600 mb-3">
             {sensors.soilMoisture >= 60 ? '🌿 Optimal root moisture'
               : sensors.soilMoisture >= 40 ? 'Adequate — monitor'
               : sensors.soilMoisture >= 30 ? '⚠️ Low — irrigate soon'
-              : '🚨 Critical — water immediately'}
+              : '🚨 Critical — dry soil'}
           </div>
           <div className="w-full progress-track">
             <div
@@ -40,6 +45,7 @@ export function HeroStats() {
             />
           </div>
         </div>
+
 
         {/* Tank */}
         <div className="flex flex-col items-start p-4 rounded-2xl bg-white/60 border border-sky-200/50 shadow-xs backdrop-blur-md">

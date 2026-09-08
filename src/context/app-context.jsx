@@ -1,13 +1,20 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { isSupabaseConfigured, testSupabaseConnection, recordIrrigationLog, fetchIrrigationLogs, subscribeToSensorUpdates } from '../services/supabase'
+import { 
+  isSupabaseConfigured, 
+  testSupabaseConnection, 
+  fetchLatestSoilMoisture, 
+  fetchSoilMoistureLogs, 
+  subscribeToSoilMoistureUpdates,
+  recordIrrigationLog 
+} from '../services/supabase'
 
 const AppContext = createContext()
 
 const INITIAL_ZONES_SENSORS = {
-  'zone-1': { temperature: 29.4, humidity: 68, soilMoisture: 62, tankLevel: 74, solarOutput: 2.8, batteryPct: 82 },
-  'zone-2': { temperature: 31.2, humidity: 54, soilMoisture: 48, tankLevel: 58, solarOutput: 2.4, batteryPct: 76 },
-  'zone-3': { temperature: 32.6, humidity: 52, soilMoisture: 41, tankLevel: 31, solarOutput: 2.1, batteryPct: 71 },
-  'zone-4': { temperature: 28.8, humidity: 72, soilMoisture: 72, tankLevel: 91, solarOutput: 3.1, batteryPct: 88 },
+  'zone-1': { temperature: 29.4, humidity: 68, soilMoisture: 53, soilMoistureRaw: 1700, tankLevel: 74, solarOutput: 2.8, batteryPct: 82 },
+  'zone-2': { temperature: 31.2, humidity: 54, soilMoisture: 53, soilMoistureRaw: 1700, tankLevel: 58, solarOutput: 2.4, batteryPct: 76 },
+  'zone-3': { temperature: 32.6, humidity: 52, soilMoisture: 53, soilMoistureRaw: 1700, tankLevel: 31, solarOutput: 2.1, batteryPct: 71 },
+  'zone-4': { temperature: 28.8, humidity: 72, soilMoisture: 53, soilMoistureRaw: 1700, tankLevel: 91, solarOutput: 3.1, batteryPct: 88 },
 }
 
 export function AppProvider({ children }) {
@@ -23,6 +30,15 @@ export function AppProvider({ children }) {
       totalIrrigationEvents: 118,
       co2SavedKg: 11.4,
     },
+  })
+
+  // Real Supabase Soil Moisture State
+  const [liveSoilData, setLiveSoilData] = useState({
+    percent: 53,
+    raw: 1700,
+    isLive: false,
+    lastUpdated: null,
+    logs: [],
   })
 
   // Sensor power state per zone (true = ON, false = OFF)
@@ -61,7 +77,9 @@ export function AppProvider({ children }) {
     ])
   }, [])
 
-  // Check Supabase connection on startup and fetch live logs & telemetry
+  // -------------------------------------------------------------
+  // PHASE 1: REAL SOIL MOISTURE FETCHING & REALTIME SUBSCRIPTION
+  // -------------------------------------------------------------
   useEffect(() => {
     if (isSupabaseConfigured) {
       testSupabaseConnection().then(res => {
@@ -69,29 +87,64 @@ export function AppProvider({ children }) {
         if (res.connected) {
           logActivity('⚡ Connected to Supabase Cloud Database!', 'success')
           
-          // Fetch past irrigation logs from Supabase
-          fetchIrrigationLogs().then(logs => {
+          // 1. Fetch latest Soil Moisture reading from sensor_telemetry
+          fetchLatestSoilMoisture().then(latest => {
+            if (latest) {
+              setLiveSoilData(prev => ({
+                ...prev,
+                percent: latest.moisturePercent,
+                raw: latest.moistureRaw,
+                isLive: true,
+                lastUpdated: latest.createdAt,
+              }))
+              logActivity(`🌿 Live Soil Moisture Synced from Supabase: ${latest.moisturePercent}% (Raw: ${latest.moistureRaw})`, 'success')
+            }
+          })
+
+          // 2. Fetch historical sensor_telemetry logs
+          fetchSoilMoistureLogs(50).then(logs => {
             if (logs && logs.length > 0) {
-              setActivityLogs(prev => [...logs, ...prev])
+              setLiveSoilData(prev => ({
+                ...prev,
+                logs: logs,
+              }))
             }
           })
         }
       })
 
-      // Subscribe to live sensor inserts
-      const unsubscribe = subscribeToSensorUpdates((newReading) => {
-        if (newReading && newReading.zone_id) {
-          setZonesSensors(prev => ({
-            ...prev,
-            [newReading.zone_id]: {
-              temperature: Number(newReading.temperature ?? prev[newReading.zone_id]?.temperature),
-              humidity: Number(newReading.humidity ?? prev[newReading.zone_id]?.humidity),
-              soilMoisture: Number(newReading.soil_moisture ?? prev[newReading.zone_id]?.soilMoisture),
-              tankLevel: Number(newReading.tank_level ?? prev[newReading.zone_id]?.tankLevel),
-              solarOutput: Number(newReading.solar_output ?? prev[newReading.zone_id]?.solarOutput),
-              batteryPct: Number(newReading.battery_pct ?? prev[newReading.zone_id]?.batteryPct),
-            },
-          }))
+      // 3. Realtime subscription to sensor_telemetry INSERTs
+      const unsubscribe = subscribeToSoilMoistureUpdates((newReading) => {
+        if (newReading) {
+          setLiveSoilData(prev => {
+            const timeStr = new Date(newReading.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            const dateStr = new Date(newReading.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            const delta = +(newReading.moisturePercent - prev.percent).toFixed(1)
+            
+            const newLogEntry = {
+              id: newReading.id || Date.now(),
+              hour: timeStr,
+              dateStr: dateStr,
+              timeAgo: 'Just now',
+              moisture: newReading.moisturePercent,
+              moistureRaw: newReading.moistureRaw,
+              delta: delta,
+              status: newReading.moisturePercent >= 60 ? 'optimal' : newReading.moisturePercent >= 40 ? 'adequate' : 'caution',
+              note: newReading.moistureRaw ? `ESP32 ADC: ${newReading.moistureRaw} raw` : 'ESP32 Live Telemetry',
+              createdAt: newReading.createdAt,
+            }
+
+            return {
+              ...prev,
+              percent: newReading.moisturePercent,
+              raw: newReading.moistureRaw,
+              isLive: true,
+              lastUpdated: newReading.createdAt,
+              logs: [newLogEntry, ...(prev.logs || [])].slice(0, 50),
+            }
+          })
+
+          logActivity(`📡 Live ESP32 Sensor Update: ${newReading.moisturePercent}% (Raw: ${newReading.moistureRaw})`, 'success')
         }
       })
 
@@ -100,6 +153,7 @@ export function AppProvider({ children }) {
       }
     }
   }, [logActivity])
+
 
 
 
@@ -286,6 +340,8 @@ export function AppProvider({ children }) {
     // Activity Logs
     activityLogs,
     logActivity,
+    // Real Supabase Soil Moisture State
+    liveSoilData,
   }), [
     state,
     setActiveZone,
@@ -306,6 +362,7 @@ export function AppProvider({ children }) {
     zonesSensors,
     activityLogs,
     logActivity,
+    liveSoilData,
   ])
 
   return (
@@ -322,15 +379,25 @@ export function useApp() {
 }
 
 export function useLiveSensors(zoneId) {
-  const { zonesSensors, sensorPower, irrigationActive, tankRefillActive } = useApp()
+  const { zonesSensors, sensorPower, irrigationActive, tankRefillActive, liveSoilData } = useApp()
   const currentZone = zoneId || 'zone-1'
   const base = zonesSensors[currentZone] || INITIAL_ZONES_SENSORS['zone-1']
   const isPowered = sensorPower[currentZone] !== false
 
+  // Overwrite soil moisture with real live Supabase reading
+  const soilMoisture = liveSoilData?.percent ?? base.soilMoisture
+  const soilMoistureRaw = liveSoilData?.raw ?? 1700
+  const isSoilMoistureLive = liveSoilData?.isLive ?? false
+
   return {
     ...base,
+    soilMoisture,
+    soilMoistureRaw,
+    isSoilMoistureLive,
+    soilMoistureLastUpdated: liveSoilData?.lastUpdated,
     isPowered,
     isIrrigating: !!irrigationActive[currentZone],
     isFillingTank: tankRefillActive,
   }
 }
+

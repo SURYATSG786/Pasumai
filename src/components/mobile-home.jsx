@@ -103,12 +103,21 @@ export function MobileHome({ onNavigate }) {
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-black uppercase text-earth-800">Moisture</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+            <span className="text-[9px] font-black text-emerald-800 bg-emerald-100/90 px-1.5 py-0.5 rounded-full border border-emerald-300">
+              LIVE
+            </span>
           </div>
           <div className="my-2">
-            <span className="text-2xl font-black text-earth-950">
-              <AnimatedNumber value={sensors.soilMoisture} suffix="%" />
-            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-black text-earth-950">
+                <AnimatedNumber value={sensors.soilMoisture} suffix="%" />
+              </span>
+              {sensors.soilMoistureRaw ? (
+                <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                  {sensors.soilMoistureRaw}
+                </span>
+              ) : null}
+            </div>
             <p className="text-[10px] font-bold text-emerald-800 mt-0.5 truncate">
               {sensors.soilMoisture >= 50 ? '🌿 Optimal Soil' : '⚠️ Low Moisture'}
             </p>
@@ -117,6 +126,7 @@ export function MobileHome({ onNavigate }) {
             <div className="progress-fill" style={{ width: `${sensors.soilMoisture}%` }} />
           </div>
         </div>
+
 
         {/* Water Tank Card */}
         <div 
