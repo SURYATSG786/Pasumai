@@ -106,27 +106,6 @@ export function Header({ page, onNavigate }) {
 
         </div>
 
-        {/* Mobile Horizontal Sub-Ribbon (< md): Fast scrolling through all 10 features */}
-        <div className="md:hidden flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1.5 -mx-2 px-2 border-t border-emerald-300/40">
-          {NAV_ITEMS.map((item) => {
-            const isActive = item.id === page
-            return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black tracking-tight whitespace-nowrap transition-all duration-150 flex-shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'btn-primary !py-1 !px-2.5 !text-[11px] shadow-sm'
-                    : 'bg-emerald-100/90 text-emerald-950 border border-emerald-300 shadow-2xs'
-                }`}
-              >
-                <NavIcon id={item.icon} className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-950' : 'text-emerald-800'}`} />
-                <span>{item.label}</span>
-              </button>
-            )
-          })}
-        </div>
-
       </div>
     </header>
   )
