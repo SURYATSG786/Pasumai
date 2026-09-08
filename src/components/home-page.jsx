@@ -43,27 +43,27 @@ export function HomePage({ onNavigate }) {
                 : ' Everything is tracking well — pick a page below for the full picture.'}
             </p>
 
-            <div className="mt-5 flex flex-wrap gap-3 items-center">
+            <div className="mt-5 grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-wrap gap-2.5 sm:gap-3 items-stretch sm:items-center">
               <button
                 onClick={() => onNavigate('ai')}
-                className="btn-primary"
+                className="btn-primary !w-full sm:!w-auto !py-3 sm:!py-2.5"
               >
                 <NavIcon id="ai" className="w-4 h-4" />
-                <span>Ask the AI advisor</span>
+                <span>Ask AI Advisor</span>
                 <NavIcon id="arrow-right" className="w-4 h-4" />
               </button>
               
               <button
                 onClick={() => onNavigate('manual')}
-                className="btn-emerald-3d"
+                className="btn-emerald-3d !w-full sm:!w-auto !py-3 sm:!py-2.5"
               >
                 <NavIcon id="manual" className="w-4 h-4" />
-                <span>Manual Controls</span>
+                <span>Manual Pump</span>
               </button>
               
               <button
                 onClick={() => onNavigate('schedule')}
-                className="btn-ghost"
+                className="btn-ghost !w-full sm:!w-auto !py-3 sm:!py-2.5 xs:col-span-2"
               >
                 <span>View Schedule</span>
               </button>
@@ -71,9 +71,10 @@ export function HomePage({ onNavigate }) {
           </div>
 
           {/* Mascot */}
-          <div className="flex-shrink-0 lg:w-auto self-center">
+          <div className="flex-shrink-0 w-full sm:w-auto self-center mt-2 sm:mt-0 flex justify-center">
             <MascotGuide zone={zone} />
           </div>
+
         </div>
       </div>
 

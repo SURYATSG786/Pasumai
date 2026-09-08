@@ -27,15 +27,15 @@ function FarmPlotMap({ activeId, onSelectZone }) {
       </div>
 
       {/* Main Grid Layout of the 4 Real Crop Fields */}
-      <div className="relative z-1 grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 min-h-[380px]">
+      <div className="relative z-1 grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-5 min-h-[320px]">
         
-        {/* Plot 1: Coconut Grove (Top Left - 5 cols) */}
+        {/* Plot 1: Coconut Grove (Top Left) */}
         <button
           type="button"
           onClick={() => onSelectZone('z1')}
-          className={`group md:col-span-5 relative h-48 sm:h-56 rounded-[2rem] overflow-hidden border-3 transition-all duration-300 text-left cursor-pointer shadow-md ${
+          className={`group col-span-1 md:col-span-5 relative h-36 sm:h-56 rounded-3xl sm:rounded-[2rem] overflow-hidden border-2 sm:border-3 transition-all duration-300 text-left cursor-pointer shadow-md ${
             activeId === 'z1'
-              ? 'border-emerald-400 ring-4 ring-emerald-400/40 scale-[1.01] shadow-xl'
+              ? 'border-emerald-400 ring-3 sm:ring-4 ring-emerald-400/40 scale-[1.01] shadow-xl'
               : 'border-white/80 hover:border-emerald-300 hover:scale-[1.01]'
           }`}
         >
@@ -49,33 +49,33 @@ function FarmPlotMap({ activeId, onSelectZone }) {
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
 
           {/* Label overlay */}
-          <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl sm:text-3xl filter drop-shadow-md">🌴</span>
-              <span className="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">
+          <div className="relative h-full flex flex-col items-center justify-center p-2 sm:p-4 text-center">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-3xl filter drop-shadow-md">🌴</span>
+              <span className="text-base sm:text-2xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">
                 Coconut
               </span>
             </div>
-            <span className="text-sm sm:text-base font-extrabold text-white/95 mt-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+            <span className="text-xs sm:text-base font-extrabold text-white/95 mt-0.5 sm:mt-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
               2.4 ac
             </span>
           </div>
 
           {/* Floating Sensor Node Badge */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center">
-            <div className="w-7 h-7 rounded-full bg-emerald-600 border-2 border-white shadow-md flex items-center justify-center text-white">
-              <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse-dot" />
+          <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center">
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-emerald-600 border-1.5 sm:border-2 border-white shadow-md flex items-center justify-center text-white">
+              <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-white animate-pulse-dot" />
             </div>
           </div>
         </button>
 
-        {/* Plot 2: Mango Orchard (Top Center - 4 cols) */}
+        {/* Plot 2: Mango Orchard (Top Right / Center) */}
         <button
           type="button"
           onClick={() => onSelectZone('z2')}
-          className={`group md:col-span-4 relative h-48 sm:h-56 rounded-[2rem] overflow-hidden border-3 transition-all duration-300 text-left cursor-pointer shadow-md ${
+          className={`group col-span-1 md:col-span-4 relative h-36 sm:h-56 rounded-3xl sm:rounded-[2rem] overflow-hidden border-2 sm:border-3 transition-all duration-300 text-left cursor-pointer shadow-md ${
             activeId === 'z2'
-              ? 'border-emerald-400 ring-4 ring-emerald-400/40 scale-[1.01] shadow-xl'
+              ? 'border-emerald-400 ring-3 sm:ring-4 ring-emerald-400/40 scale-[1.01] shadow-xl'
               : 'border-white/80 hover:border-emerald-300 hover:scale-[1.01]'
           }`}
         >
@@ -87,32 +87,32 @@ function FarmPlotMap({ activeId, onSelectZone }) {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
 
-          <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl sm:text-3xl filter drop-shadow-md">🥭</span>
-              <span className="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">
+          <div className="relative h-full flex flex-col items-center justify-center p-2 sm:p-4 text-center">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-3xl filter drop-shadow-md">🥭</span>
+              <span className="text-base sm:text-2xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">
                 Mango
               </span>
             </div>
-            <span className="text-sm sm:text-base font-extrabold text-white/95 mt-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+            <span className="text-xs sm:text-base font-extrabold text-white/95 mt-0.5 sm:mt-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
               3.1 ac
             </span>
           </div>
 
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center">
-            <div className="w-7 h-7 rounded-full bg-emerald-600 border-2 border-white shadow-md flex items-center justify-center text-white">
-              <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse-dot" />
+          <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center">
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-emerald-600 border-1.5 sm:border-2 border-white shadow-md flex items-center justify-center text-white">
+              <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-white animate-pulse-dot" />
             </div>
           </div>
         </button>
 
-        {/* Plot 3: Vegetable Patch (Top Right - 3 cols, vertical layout) */}
+        {/* Plot 3: Vegetable Patch */}
         <button
           type="button"
           onClick={() => onSelectZone('z3')}
-          className={`group md:col-span-3 relative h-48 sm:h-56 rounded-[2rem] overflow-hidden border-3 transition-all duration-300 text-left cursor-pointer shadow-md ${
+          className={`group col-span-1 md:col-span-3 relative h-32 sm:h-56 rounded-3xl sm:rounded-[2rem] overflow-hidden border-2 sm:border-3 transition-all duration-300 text-left cursor-pointer shadow-md ${
             activeId === 'z3'
-              ? 'border-amber-400 ring-4 ring-amber-400/40 scale-[1.01] shadow-xl'
+              ? 'border-amber-400 ring-3 sm:ring-4 ring-amber-400/40 scale-[1.01] shadow-xl'
               : 'border-white/80 hover:border-amber-300 hover:scale-[1.01]'
           }`}
         >
@@ -124,33 +124,33 @@ function FarmPlotMap({ activeId, onSelectZone }) {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
 
-          <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xl filter drop-shadow-md">🥬</span>
-              <span className="text-base sm:text-lg font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          <div className="relative h-full flex flex-col items-center justify-center p-2 sm:p-4 text-center">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <span className="text-lg sm:text-2xl filter drop-shadow-md">🥬</span>
+              <span className="text-sm sm:text-lg font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                 Vegetables
               </span>
             </div>
-            <span className="text-xs sm:text-sm font-extrabold text-white/95 mt-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+            <span className="text-[11px] sm:text-sm font-extrabold text-white/95 mt-0.5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
               0.9 ac
             </span>
           </div>
 
           {/* Attention indicator badge */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center">
-            <div className="w-7 h-7 rounded-full bg-amber-500 border-2 border-white shadow-md flex items-center justify-center text-white">
+          <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center">
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-amber-500 border-1.5 sm:border-2 border-white shadow-md flex items-center justify-center text-white">
               <span className="text-[10px] font-black">!</span>
             </div>
           </div>
         </button>
 
-        {/* Plot 4: Turmeric Field (Bottom - Span 12 cols, wide panoramic plot) */}
+        {/* Plot 4: Turmeric Field */}
         <button
           type="button"
           onClick={() => onSelectZone('z4')}
-          className={`group md:col-span-12 relative h-32 sm:h-36 rounded-[2rem] overflow-hidden border-3 transition-all duration-300 text-left cursor-pointer shadow-md ${
+          className={`group col-span-1 md:col-span-12 relative h-32 sm:h-36 rounded-3xl sm:rounded-[2rem] overflow-hidden border-2 sm:border-3 transition-all duration-300 text-left cursor-pointer shadow-md ${
             activeId === 'z4'
-              ? 'border-emerald-400 ring-4 ring-emerald-400/40 scale-[1.005] shadow-xl'
+              ? 'border-emerald-400 ring-3 sm:ring-4 ring-emerald-400/40 scale-[1.005] shadow-xl'
               : 'border-white/80 hover:border-emerald-300 hover:scale-[1.005]'
           }`}
         >
@@ -162,19 +162,19 @@ function FarmPlotMap({ activeId, onSelectZone }) {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-black/50" />
 
-          <div className="relative h-full flex items-center justify-between px-6 sm:px-10">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-600 border-2 border-white shadow-md flex items-center justify-center text-white">
-                <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse-dot" />
+          <div className="relative h-full flex flex-col md:flex-row items-center justify-center md:justify-between p-2 sm:px-10 text-center md:text-left">
+            <div className="flex flex-col md:flex-row items-center gap-1.5 sm:gap-3">
+              <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-emerald-600 border-1.5 sm:border-2 border-white shadow-md flex items-center justify-center text-white">
+                <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-white animate-pulse-dot" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl filter drop-shadow-md">🟠</span>
-                  <span className="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-lg sm:text-2xl filter drop-shadow-md">🟠</span>
+                  <span className="text-sm sm:text-2xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                     Turmeric Field
                   </span>
                 </div>
-                <span className="text-xs sm:text-sm font-extrabold text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] block mt-0.5">
+                <span className="text-[10px] sm:text-sm font-extrabold text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] block mt-0.5">
                   1.6 ac · Deep Root Drip Line
                 </span>
               </div>
