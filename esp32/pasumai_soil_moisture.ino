@@ -11,7 +11,7 @@
     - Sensor GND  --> ESP32 GND
     - Sensor AOUT --> ESP32 GPIO 34 (ADC1 Channel 6)
   
-  Target:
+  Target Cloud:
     - Supabase REST API (POST to sensor_telemetry table)
   =============================================================================
 */
@@ -19,7 +19,6 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
 
 // ============================================================================
 // 1. PRE-CONFIGURED NETWORK CREDENTIALS
@@ -37,9 +36,9 @@ const char* SUPABASE_KEY  = "sb_publishable_pVKAyyXXMelzZJKl2gvGcg_16JMKxH6";
 #define SOIL_PIN        34   // Sensor AOUT connected to GPIO 34
 #define STATUS_LED      2    // ESP32 built-in status LED
 
-// Calibrated Values:
-// - Air / Dry Value: ~2600 (0% Moisture)
-// - Submerged in Water: ~900 (100% Moisture)
+// Calibrated Values (Measured):
+// - Air / Dry Value: 2600 (0% Moisture)
+// - Submerged in Water: 900 (100% Moisture)
 const int DRY_VALUE     = 2600;  // 0% Moisture (Air reading)
 const int WET_VALUE     = 900;   // 100% Moisture (Water reading)
 
@@ -78,7 +77,7 @@ void connectToWiFi() {
     Serial.println(WiFi.localIP());
   } else {
     Serial.println();
-    Serial.println("[WiFi] Failed to connect. Will retry during next loop.");
+    Serial.println("[WiFi] Failed to connect. Will retry during next cycle.");
   }
 }
 
@@ -93,7 +92,7 @@ int readSmoothADC(int pin) {
     sum += analogRead(pin);
     delay(10);
   }
-  return sum / samples;
+  return (int)(sum / samples);
 }
 
 /**
@@ -110,16 +109,16 @@ int calculateMoisturePercent(int rawAdc) {
  */
 bool sendTelemetryToSupabase(int rawValue, int percentValue) {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[HTTP] WiFi not connected. Skipping upload.");
+    Serial.println("[HTTP] WiFi not connected. Attempting reconnection...");
     connectToWiFi();
-    return false;
+    if (WiFi.status() != WL_CONNECTED) return false;
   }
 
   // Flash status LED during transmission
   digitalWrite(STATUS_LED, HIGH);
 
   WiFiClientSecure client;
-  client.setInsecure(); // Direct TLS connection without cert verification
+  client.setInsecure(); // Direct TLS connection to Supabase
 
   HTTPClient http;
   http.begin(client, SUPABASE_URL);
@@ -130,13 +129,9 @@ bool sendTelemetryToSupabase(int rawValue, int percentValue) {
   http.addHeader("Authorization", String("Bearer ") + SUPABASE_KEY);
   http.addHeader("Prefer", "return=minimal");
 
-  // Create JSON Payload
-  StaticJsonDocument<128> doc;
-  doc["moisture_raw"] = rawValue;
-  doc["moisture_percent"] = percentValue;
-
-  String requestBody;
-  serializeJson(doc, requestBody);
+  // Create JSON Payload without external dependencies
+  char requestBody[128];
+  snprintf(requestBody, sizeof(requestBody), "{\"moisture_raw\":%d,\"moisture_percent\":%d}", rawValue, percentValue);
 
   Serial.println("[HTTP] Sending POST payload to Supabase:");
   Serial.print("       --> ");
@@ -146,15 +141,15 @@ bool sendTelemetryToSupabase(int rawValue, int percentValue) {
 
   bool success = false;
   if (httpResponseCode >= 200 && httpResponseCode < 300) {
-    Serial.print("[HTTP] Success! Supabase Status: ");
+    Serial.print("[HTTP] Success! Supabase Response Status: ");
     Serial.println(httpResponseCode);
     success = true;
   } else {
-    Serial.print("[HTTP] Failed! Supabase Status: ");
+    Serial.print("[HTTP] Failed! Supabase Response Status: ");
     Serial.println(httpResponseCode);
     String response = http.getString();
     if (response.length() > 0) {
-      Serial.print("[HTTP] Response: ");
+      Serial.print("[HTTP] Response Body: ");
       Serial.println(response);
     }
   }
@@ -174,7 +169,7 @@ void setup() {
 
   Serial.println();
   Serial.println("==================================================");
-  Serial.println("🌱 PASUMAI ESP32 SOIL MOISTURE SENSOR NODE STARTING");
+  Serial.println("🌱 PASUMAI ESP32 SOIL MOISTURE SENSOR NODE");
   Serial.println("==================================================");
 
   pinMode(SOIL_PIN, INPUT);
@@ -196,7 +191,7 @@ void loop() {
   if (currentMillis - lastSendTime >= SEND_INTERVAL_MS || lastSendTime == 0) {
     lastSendTime = currentMillis;
 
-    // 1. Read Soil Moisture Sensor
+    // 1. Read Soil Moisture Sensor (Smoothed 10-sample average)
     int rawADC = readSmoothADC(SOIL_PIN);
     int moisturePercent = calculateMoisturePercent(rawADC);
 
@@ -204,18 +199,18 @@ void loop() {
     Serial.println("--------------------------------------------------");
     Serial.printf("[SENSOR] Raw ADC: %d | Moisture: %d%%\n", rawADC, moisturePercent);
     if (moisturePercent >= 60) {
-      Serial.println("[STATUS] Optimal Soil Moisture 🌿");
+      Serial.println("[STATUS] Optimal Root Zone Moisture 🌿");
     } else if (moisturePercent >= 40) {
       Serial.println("[STATUS] Adequate Soil Moisture 💧");
     } else {
-      Serial.println("[STATUS] Low Moisture - Needs Irrigation ⚠️");
+      Serial.println("[STATUS] Low Moisture - Irrigation Recommended ⚠️");
     }
 
-    // 3. Post data to Supabase
+    // 3. Post telemetry data to Supabase
     sendTelemetryToSupabase(rawADC, moisturePercent);
     Serial.println("--------------------------------------------------");
   }
 
-  // Small delay for watchdog
+  // Small delay for RTOS watchdog
   delay(100);
 }
