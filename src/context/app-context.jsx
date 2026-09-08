@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { isSupabaseConfigured, testSupabaseConnection, recordIrrigationLog } from '../services/supabase'
 
 const AppContext = createContext()
 
@@ -14,6 +15,7 @@ export function AppProvider({ children }) {
     activeZoneId: 'zone-1',
     darkMode: false,
     connected: true,
+    supabaseConnected: false,
     lastUpdated: Date.now(),
     stats: {
       totalWaterSaved: 1287,
@@ -58,6 +60,21 @@ export function AppProvider({ children }) {
       ...prev.slice(0, 19)
     ])
   }, [])
+
+  // Check Supabase connection on startup
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      testSupabaseConnection().then(res => {
+        setState(prev => ({ ...prev, supabaseConnected: res.connected }))
+        if (res.connected) {
+          logActivity('⚡ Connected to Supabase Cloud Database!', 'success')
+        } else {
+          logActivity(`Supabase notice: ${res.message}`, 'warning')
+        }
+      })
+    }
+  }, [logActivity])
+
 
   const setActiveZone = useCallback((zoneId) => {
     setState(prev => ({ ...prev, activeZoneId: zoneId, lastUpdated: Date.now() }))
