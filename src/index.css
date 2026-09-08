@@ -466,6 +466,21 @@ body {
     inset 0 -1.5px 2px 0 rgba(5, 150, 105, 0.35);
 }
 
+/* Mobile Bottom Navigation Bar Glass Dock */
+.glass-bottom-bar {
+  background: linear-gradient(
+    180deg,
+    rgba(220, 252, 231, 0.96) 0%,
+    rgba(209, 250, 229, 0.98) 100%
+  );
+  border-top: 2px solid rgba(16, 185, 129, 0.5);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+
 /* ------------------------------------------------------------------ */
 /*  4. INTERACTIVE QUIZ & SELECTION OPTION BUTTONS                     */
 /* ------------------------------------------------------------------ */
@@ -785,6 +800,12 @@ body {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 19, 25, 0.92) 100%);
   border-color: rgba(56, 189, 248, 0.25);
 }
+
+.dark .glass-bottom-bar {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(11, 19, 25, 0.98) 100%);
+  border-top-color: rgba(56, 189, 248, 0.3);
+}
+
 
 .dark .option {
   background: rgba(19, 34, 46, 0.85);

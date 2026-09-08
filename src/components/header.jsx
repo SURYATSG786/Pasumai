@@ -8,7 +8,8 @@ export function Header({ page, onNavigate }) {
   return (
     <header className="sticky top-0 z-30 glass-header">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-        {/* Single unified horizontal row displaying all feature names without swiping */}
+        
+        {/* Main top bar */}
         <div className="flex items-center justify-between h-14 sm:h-16 gap-1.5 sm:gap-3">
           
           {/* Left: Brand Logo & Title */}
@@ -49,14 +50,14 @@ export function Header({ page, onNavigate }) {
               </svg>
               <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] animate-pulse-dot" style={{ animationDuration: '2.4s' }} />
             </div>
-            <div className="text-left hidden md:block">
+            <div className="text-left">
               <div className="text-sm lg:text-base font-black tracking-tight text-emerald-950 leading-none">Pasumai</div>
               <div className="text-[9px] text-emerald-800 font-bold -mt-0.5">Smart Solar</div>
             </div>
           </button>
 
-          {/* Center: All 9 Feature Items Displayed Side-by-Side Without Swiping */}
-          <nav className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 min-w-0">
+          {/* Center (Desktop/Tablet >= md): All 10 Feature Items Displayed Side-by-Side Without Swiping */}
+          <nav className="hidden md:flex flex-1 items-center justify-center gap-1 sm:gap-1.5 min-w-0">
             {NAV_ITEMS.map((item) => {
               const isActive = item.id === page
               return (
@@ -81,7 +82,7 @@ export function Header({ page, onNavigate }) {
             {/* Live status badge */}
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-black tracking-wider text-emerald-950 bg-emerald-100/90 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl border-2 border-emerald-400 shadow-xs backdrop-blur-md">
               <span className={`inline-block w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] animate-pulse-dot' : 'bg-rose-500'}`} />
-              <span className="uppercase hidden xs:inline">{connected ? 'Live' : 'Offline'}</span>
+              <span className="uppercase font-black">{connected ? 'Live' : 'Offline'}</span>
             </div>
 
             {/* Dark mode toggle */}
@@ -104,7 +105,30 @@ export function Header({ page, onNavigate }) {
           </div>
 
         </div>
+
+        {/* Mobile Horizontal Sub-Ribbon (< md): Fast scrolling through all 10 features */}
+        <div className="md:hidden flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1.5 -mx-2 px-2 border-t border-emerald-300/40">
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.id === page
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black tracking-tight whitespace-nowrap transition-all duration-150 flex-shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'btn-primary !py-1 !px-2.5 !text-[11px] shadow-sm'
+                    : 'bg-emerald-100/90 text-emerald-950 border border-emerald-300 shadow-2xs'
+                }`}
+              >
+                <NavIcon id={item.icon} className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-950' : 'text-emerald-800'}`} />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
       </div>
     </header>
   )
 }
+
